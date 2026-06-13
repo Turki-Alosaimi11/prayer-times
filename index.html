@@ -13,7 +13,7 @@ body{
     overflow:hidden;
 }
 
-/* خلفية ضبابية */
+/* الخلفية */
 body::before{
     content:"";
     position:fixed;
@@ -23,41 +23,34 @@ body::before{
     z-index:-1;
 }
 
-/* 🔴 أعلى يمين (المعلومات كلها) */
-.top-info{
-    position:absolute;
-    top:10px;
-    right:20px;
-    text-align:right;
-    font-size:14px;
-    line-height:1.8;
-}
-
-.company{
-    font-size:18px;
-    font-weight:bold;
-}
-
 /* الشعار */
 .logo{
     text-align:center;
     margin-top:10px;
 }
 .logo img{
-    width:140px;
+    width:160px;
+}
+
+/* العنوان */
+.title{
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
 }
 
 /* الساعة */
 .clock{
     text-align:center;
-    font-size:34px;
+    font-size:36px;
     margin-top:5px;
 }
 
 /* التاريخ */
 .date{
     text-align:center;
-    font-size:14px;
+    font-size:15px;
+    margin-top:5px;
     opacity:0.9;
 }
 
@@ -65,47 +58,51 @@ body::before{
 .prayers{
     display:flex;
     justify-content:center;
+    flex-wrap:wrap;
     gap:8px;
     margin-top:10px;
 }
 
 .prayer{
     background:rgba(255,255,255,0.08);
-    padding:8px;
+    padding:10px;
     border-radius:10px;
-    min-width:85px;
+    min-width:95px;
     text-align:center;
 }
 
-/* الصورة في المنتصف */
+.prayer.active{
+    background:#22c55e;
+}
+
+/* الصورة (بدون قص + الحجم الطبيعي) */
 .hero{
     display:flex;
     justify-content:center;
-    margin-top:15px;
+    margin-top:10px;
 }
 
 .hero img{
-    max-width:70%;
+    max-width:80%;
     height:auto;
     object-fit:contain;
     border-radius:12px;
     box-shadow:0 10px 25px rgba(0,0,0,0.5);
 }
 
-/* 🔥 عد تنازلي */
+/* العد التنازلي */
 .countdown{
-    position:absolute;
-    left:20px;
-    top:120px;
-    width:260px;
-    padding:12px;
-    background:rgba(255,255,255,0.08);
-    border-radius:12px;
     text-align:center;
-    font-size:14px;
+    margin-top:10px;
+    font-size:16px;
+    background:rgba(255,255,255,0.08);
+    width:420px;
+    margin:auto;
+    padding:10px;
+    border-radius:10px;
 }
 
-/* الشريط السفلي */
+/* الشريط */
 .footer{
     position:fixed;
     bottom:0;
@@ -113,8 +110,8 @@ body::before{
     background:#0b5d3b;
     padding:10px;
     font-size:16px;
-    overflow:hidden;
     white-space:nowrap;
+    overflow:hidden;
 }
 
 .scroll{
@@ -131,25 +128,26 @@ body::before{
 
 <body>
 
-<!-- 🔴 معلومات أعلى اليمين -->
-<div class="top-info">
-    <div class="company">مؤسسة رسملة للتسويق والمقاولات</div>
-    <div id="clock">--</div>
-    <div id="date">--</div>
-</div>
-
-<!-- شعار -->
+<!-- الشعار -->
 <div class="logo">
     <img src="logo.png">
 </div>
 
+<div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
+
+<!-- الساعة -->
+<div class="clock" id="clock">--</div>
+
+<!-- التاريخ -->
+<div class="date" id="date">--</div>
+
 <!-- المواقيت -->
 <div class="prayers">
-    <div class="prayer" id="fajr">الفجر<br><span></span></div>
-    <div class="prayer" id="dhuhr">الظهر<br><span></span></div>
-    <div class="prayer" id="asr">العصر<br><span></span></div>
-    <div class="prayer" id="maghrib">المغرب<br><span></span></div>
-    <div class="prayer" id="isha">العشاء<br><span></span></div>
+    <div class="prayer" id="fajr"><div>الفجر</div><span></span></div>
+    <div class="prayer" id="dhuhr"><div>الظهر</div><span></span></div>
+    <div class="prayer" id="asr"><div>العصر</div><span></span></div>
+    <div class="prayer" id="maghrib"><div>المغرب</div><span></span></div>
+    <div class="prayer" id="isha"><div>العشاء</div><span></span></div>
 </div>
 
 <!-- الصورة -->
@@ -157,12 +155,12 @@ body::before{
     <img src="m.png">
 </div>
 
-<!-- 🔥 عد تنازلي -->
+<!-- العد التنازلي -->
 <div class="countdown" id="countdown">
     الصلاة القادمة...
 </div>
 
-<!-- صوت الأذان -->
+<!-- الصوت -->
 <audio id="adhan" src="adhan.mp3"></audio>
 
 <!-- الشريط -->
@@ -178,7 +176,7 @@ let times = {};
 let lastPlayed = "";
 let unlocked = false;
 
-/* تشغيل الصوت */
+/* تفعيل الصوت */
 document.addEventListener("click", () => {
     const a = document.getElementById("adhan");
     a.play().then(()=>{
@@ -188,7 +186,7 @@ document.addEventListener("click", () => {
     }).catch(()=>{});
 });
 
-/* 12 ساعة */
+/* تحويل 12 ساعة */
 function to12(t){
     let [h,m] = t.split(":").map(Number);
     let ampm = h>=12?"PM":"AM";
@@ -203,23 +201,26 @@ function updateClock(){
     let m = d.getMinutes();
     let s = d.getSeconds();
     let ampm = h>=12?"PM":"AM";
+
     h = h%12 || 12;
 
     document.getElementById("clock").innerText =
-    `${h}:${m}:${s} ${ampm}`;
+    `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* التاريخ */
+/* التاريخ (هجري + ميلادي + يوم) */
 function updateDate(){
     let d = new Date();
 
     let greg = d.toLocaleDateString("en-GB");
 
-    let hijri = new Intl.DateTimeFormat('ar-TN-u-ca-islamic',{
-        day:'numeric',month:'long',year:'numeric'
+    let hijri = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', {
+        day:'numeric',
+        month:'long',
+        year:'numeric'
     }).format(d);
 
-    let day = d.toLocaleDateString('ar',{weekday:'long'});
+    let day = d.toLocaleDateString('ar', {weekday:'long'});
 
     document.getElementById("date").innerText =
     `${day} | ميلادي: ${greg} | هجري: ${hijri}`;
@@ -244,10 +245,10 @@ async function loadTimes(){
     }
 }
 
-/* 🔥 العد التنازلي + ربط الأذان */
+/* حساب الوقت المتبقي */
 function countdown(){
     let now = new Date();
-    let secNow = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+    let nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
 
     let next = null;
     let nextSec = null;
@@ -256,7 +257,7 @@ function countdown(){
         let [h,m] = times[p].split(":").map(Number);
         let t = h*3600 + m*60;
 
-        if(t > secNow){
+        if(t > nowSec){
             next = p;
             nextSec = t;
             break;
@@ -264,7 +265,7 @@ function countdown(){
     }
 
     if(next){
-        let diff = nextSec - secNow;
+        let diff = nextSec - nowSec;
 
         let h = Math.floor(diff/3600);
         let m = Math.floor((diff%3600)/60);
@@ -272,25 +273,38 @@ function countdown(){
 
         document.getElementById("countdown").innerText =
         `الصلاة القادمة: ${next} خلال ${h} ساعة ${m} دقيقة ${s} ثانية`;
-
-        /* 🔥 تشغيل الأذان عند الصفر */
-        if(diff === 0 && lastPlayed !== next && unlocked){
-            const a = document.getElementById("adhan");
-            a.currentTime = 0;
-            a.play();
-            lastPlayed = next;
-        }
     }
 }
 
-/* تشغيل */
+/* تشغيل الأذان مرة واحدة */
+function check(){
+    let now = new Date();
+    let current =
+        now.getHours().toString().padStart(2,'0') + ":" +
+        now.getMinutes().toString().padStart(2,'0');
+
+    for(let p in times){
+        if(times[p] === current && lastPlayed !== p){
+            if(unlocked){
+                let a = document.getElementById("adhan");
+                a.currentTime = 0;
+                a.play();
+            }
+            lastPlayed = p;
+        }
+    }
+
+    countdown();
+}
+
+/* تشغيل النظام */
 function start(){
     loadTimes();
     updateClock();
     updateDate();
 
     setInterval(updateClock,1000);
-    setInterval(countdown,1000);
+    setInterval(check,1000);
 }
 
 start();
