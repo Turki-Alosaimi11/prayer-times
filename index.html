@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>نظام الأذان - رسملة</title>
+<title>نظام الأذان</title>
 
 <style>
 body{
@@ -10,100 +10,77 @@ body{
     font-family: Arial;
     color:white;
     background:url('bg.jpg') center/cover no-repeat;
-    position:relative;
 }
 
-/* خلفية ضبابية */
 body::before{
     content:"";
     position:fixed;
-    top:0;left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.55);
+    inset:0;
+    background:rgba(0,0,0,0.6);
     backdrop-filter: blur(10px);
     z-index:-1;
 }
 
-/* الشعار */
 .logo{
     text-align:center;
-    margin-top:20px;
+    margin-top:15px;
 }
-
 .logo img{
-    width:220px;
+    width:200px;
     filter: drop-shadow(0 0 10px #0b5d3b);
 }
 
-/* العنوان */
 .title{
     text-align:center;
-    font-size:26px;
+    font-size:24px;
     margin-top:10px;
 }
 
-/* الساعة */
 .clock{
     text-align:center;
-    font-size:30px;
+    font-size:32px;
     margin-top:10px;
     font-weight:bold;
 }
 
-/* التاريخ */
 .date{
     text-align:center;
-    font-size:18px;
     opacity:0.9;
 }
 
-/* صندوق المواقيت */
+.countdown{
+    width:300px;
+    margin:20px auto;
+    text-align:center;
+    background:rgba(255,255,255,0.08);
+    padding:15px;
+    border-radius:15px;
+}
+
+.countdown span{
+    font-size:22px;
+    font-weight:bold;
+}
+
 .box{
     display:flex;
     justify-content:center;
     flex-wrap:wrap;
-    gap:12px;
-    margin-top:25px;
+    gap:10px;
 }
 
 .prayer{
     background:rgba(255,255,255,0.08);
-    padding:15px;
-    border-radius:12px;
-    min-width:120px;
+    padding:12px;
+    border-radius:10px;
+    min-width:110px;
     text-align:center;
-    transition:0.3s;
-    backdrop-filter: blur(8px);
 }
 
 .prayer.active{
     background:#22c55e;
-    transform:scale(1.1);
 }
 
-/* صندوق العد التنازلي */
-.countdown{
-    text-align:center;
-    margin:20px auto;
-    padding:15px;
-    width:280px;
-    background:rgba(255,255,255,0.08);
-    border-radius:15px;
-    backdrop-filter: blur(10px);
-}
-
-.countdown h3{
-    margin:0;
-    font-size:18px;
-}
-
-.countdown span{
-    font-size:24px;
-    font-weight:bold;
-}
-
-/* الشريط */
 .ticker{
     position:fixed;
     bottom:0;
@@ -120,122 +97,107 @@ body::before{
     <img src="logo.png">
 </div>
 
-<div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
+<div class="title">مؤسسة رسملة</div>
 
-<div class="clock" id="clock">--:--:--</div>
+<div class="clock" id="clock">--</div>
 <div class="date" id="date"></div>
 
 <div class="countdown">
-    <h3>الوقت المتبقي للصلاة القادمة</h3>
-    <span id="nextPrayer">--</span>
+    الصلاة القادمة: <span id="next">--</span><br>
+    <span id="timeLeft">--</span>
 </div>
 
 <div class="box">
-    <div class="prayer" id="fajr"><h3>الفجر</h3><span>--</span></div>
-    <div class="prayer" id="dhuhr"><h3>الظهر</h3><span>--</span></div>
-    <div class="prayer" id="asr"><h3>العصر</h3><span>--</span></div>
-    <div class="prayer" id="maghrib"><h3>المغرب</h3><span>--</span></div>
-    <div class="prayer" id="isha"><h3>العشاء</h3><span>--</span></div>
+    <div class="prayer" id="fajr"><h3>الفجر</h3><span></span></div>
+    <div class="prayer" id="dhuhr"><h3>الظهر</h3><span></span></div>
+    <div class="prayer" id="asr"><h3>العصر</h3><span></span></div>
+    <div class="prayer" id="maghrib"><h3>المغرب</h3><span></span></div>
+    <div class="prayer" id="isha"><h3>العشاء</h3><span></span></div>
 </div>
 
 <audio id="adhan" src="adhan.mp3"></audio>
 
 <div class="ticker">
-<marquee direction="right">
-سبحان الله وبحمده | نسأل الله لكم التوفيق
-</marquee>
+<marquee>سبحان الله وبحمده</marquee>
 </div>
 
 <script>
 
-const city="Riyadh";
-const country="SA";
-
-let times={};
+let times = {};
+let lastPlayed = "";
 
 function format12(date){
     let h=date.getHours();
     let m=date.getMinutes();
-    let s=date.getSeconds();
     let ampm=h>=12?"PM":"AM";
-    h=h%12; if(h===0)h=12;
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} ${ampm}`;
+    h=h%12||12;
+    return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
 function updateClock(){
-    const now=new Date();
-    document.getElementById("clock").innerText=format12(now);
+    document.getElementById("clock").innerText = format12(new Date());
 }
 
-async function loadTimes(){
-    const res=await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=4`);
-    const data=await res.json();
-    const t=data.data.timings;
+async function load(){
+    const res = await fetch("https://api.aladhan.com/v1/timingsByCity?city=Riyadh&country=SA&method=4");
+    const data = await res.json();
+    const t = data.data.timings;
 
-    times={
-        Fajr:t.Fajr,
-        Dhuhr:t.Dhuhr,
-        Asr:t.Asr,
-        Maghrib:t.Maghrib,
-        Isha:t.Isha
+    times = {
+        Fajr: t.Fajr,
+        Dhuhr: t.Dhuhr,
+        Asr: t.Asr,
+        Maghrib: t.Maghrib,
+        Isha: t.Isha
     };
 
     for(let p in times){
-        document.getElementById(p.toLowerCase()).querySelector("span").innerText=times[p];
+        document.getElementById(p.toLowerCase()).querySelector("span").innerText = times[p];
     }
 }
 
-function getNow(){
-    const d=new Date();
-    return d.toTimeString().slice(0,5);
-}
-
-function playAdhan(){
-    const audio=document.getElementById("adhan");
-    audio.play().catch(()=>{});
+function toMinutes(t){
+    let [h,m] = t.split(":").map(Number);
+    return h*60 + m;
 }
 
 function check(){
-    const now=getNow();
+    let now = new Date();
+    let nowMin = now.getHours()*60 + now.getMinutes();
+
+    let nextPrayer = null;
+    let nextTime = null;
 
     for(let p in times){
-        if(times[p]===now){
-            playAdhan();
+        let tMin = toMinutes(times[p]);
+
+        if(tMin === nowMin){
+            if(lastPlayed !== p){
+                document.getElementById("adhan").play().catch(()=>{});
+                lastPlayed = p;
+            }
+        }
+
+        if(tMin > nowMin && !nextPrayer){
+            nextPrayer = p;
+            nextTime = tMin;
         }
     }
 
-    showNext();
-}
+    if(nextPrayer){
+        document.getElementById("next").innerText = nextPrayer;
 
-function showNext(){
-    const now=getNow();
-    let next=null;
-    let diffText="--";
-
-    for(let p in times){
-        if(times[p]>now){
-            next=p;
-            break;
-        }
-    }
-
-    if(next){
-        document.getElementById("nextPrayer").innerText=next;
-        document.getElementById(next.toLowerCase()).classList.add("active");
+        let diff = nextTime - nowMin;
+        document.getElementById("timeLeft").innerText =
+            diff + " دقيقة متبقية";
     }
 }
 
-function start(){
-    const d=new Date();
-    document.getElementById("date").innerText=d.toLocaleDateString("ar-SA");
+setInterval(updateClock,1000);
+setInterval(check,10000);
 
-    loadTimes();
-
-    setInterval(updateClock,1000);
-    setInterval(check,30000);
-}
-
-start();
+updateClock();
+load();
 
 </script>
 
