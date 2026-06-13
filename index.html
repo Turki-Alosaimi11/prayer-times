@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Rasmalah Dashboard</title>
+<title>Rasmalah Screen</title>
 
 <style>
 body{
@@ -13,7 +13,7 @@ body{
     overflow:hidden;
 }
 
-/* طبقة خفيفة */
+/* خلفية ضبابية */
 body::before{
     content:"";
     position:fixed;
@@ -23,13 +23,12 @@ body::before{
     z-index:-1;
 }
 
-/* الأعلى */
-.header{
+/* الشعار */
+.logo{
     text-align:center;
     padding-top:10px;
 }
-
-.header img{
+.logo img{
     width:180px;
 }
 
@@ -38,14 +37,6 @@ body::before{
     text-align:center;
     font-size:24px;
     font-weight:bold;
-    margin-top:5px;
-}
-
-/* الساعة */
-.clock{
-    text-align:center;
-    font-size:32px;
-    margin-top:5px;
 }
 
 /* المواقيت */
@@ -53,36 +44,34 @@ body::before{
     display:flex;
     justify-content:center;
     gap:10px;
-    margin-top:10px;
     flex-wrap:wrap;
+    margin-top:10px;
 }
 
 .prayer{
     background:rgba(255,255,255,0.08);
     padding:10px;
     border-radius:10px;
-    min-width:110px;
+    min-width:100px;
     text-align:center;
-    transition:0.3s;
 }
 
 .prayer.active{
     background:#22c55e;
-    transform:scale(1.1);
 }
 
-/* الصورة الوسط */
-.center-img{
+/* الصورة الكبيرة في الوسط */
+.hero{
     display:flex;
     justify-content:center;
     margin-top:15px;
 }
 
-.center-img img{
-    width:55%;
-    max-width:650px;
+.hero img{
+    width:60%;
+    max-width:800px;
     border-radius:15px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    box-shadow:0 10px 25px rgba(0,0,0,0.5);
 }
 
 /* العد التنازلي */
@@ -90,6 +79,12 @@ body::before{
     text-align:center;
     margin-top:10px;
     font-size:18px;
+    background:rgba(255,255,255,0.08);
+    width:350px;
+    margin-left:auto;
+    margin-right:auto;
+    padding:12px;
+    border-radius:10px;
 }
 
 /* الشريط السفلي */
@@ -106,7 +101,7 @@ body::before{
 
 .scroll{
     display:inline-block;
-    animation: move 20s linear infinite;
+    animation:move 25s linear infinite;
 }
 
 @keyframes move{
@@ -118,12 +113,11 @@ body::before{
 
 <body>
 
-<div class="header">
+<div class="logo">
     <img src="logo.png">
 </div>
 
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
-<div class="clock" id="clock">--</div>
 
 <!-- مواقيت -->
 <div class="prayers">
@@ -134,8 +128,8 @@ body::before{
     <div class="prayer" id="isha"><div>العشاء</div><span></span></div>
 </div>
 
-<!-- الصورة في الوسط -->
-<div class="center-img">
+<!-- الصورة الكبيرة -->
+<div class="hero">
     <img src="m.png">
 </div>
 
@@ -146,7 +140,7 @@ body::before{
 
 <audio id="adhan" src="adhan.mp3"></audio>
 
-<!-- شريط سفلي -->
+<!-- الشريط السفلي -->
 <div class="footer">
     <div class="scroll">
         سبحان الله • الحمد لله • لا إله إلا الله • الله أكبر • استغفر الله • اللهم صل وسلم على نبينا محمد
@@ -156,12 +150,13 @@ body::before{
 <script>
 
 let times = {};
-let lastPlayed = {};
+let lastPlayed = "";
 let unlocked = false;
 
 /* تشغيل الصوت */
 document.addEventListener("click", () => {
     const audio = document.getElementById("adhan");
+
     audio.play().then(()=>{
         audio.pause();
         audio.currentTime = 0;
@@ -170,7 +165,7 @@ document.addEventListener("click", () => {
 });
 
 /* تشغيل الأذان */
-function playAdhan(prayer){
+function playAdhan(){
     if(!unlocked) return;
 
     const audio = document.getElementById("adhan");
@@ -224,9 +219,9 @@ function check(){
         now.getMinutes().toString().padStart(2,'0');
 
     for(let p in times){
-        if(times[p] === current && !lastPlayed[p]){
-            playAdhan(p);
-            lastPlayed[p] = true;
+        if(times[p] === current && lastPlayed !== p){
+            playAdhan();
+            lastPlayed = p;
         }
     }
 
@@ -255,25 +250,9 @@ async function loadTimes(){
     }
 }
 
-/* الساعة */
-function updateClock(){
-    let d = new Date();
-    let h = d.getHours();
-    let m = d.getMinutes();
-    let ampm = h>=12?"PM":"AM";
-
-    h = h%12 || 12;
-
-    document.getElementById("clock").innerText =
-    `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
-}
-
 /* تشغيل */
 function start(){
     loadTimes();
-    updateClock();
-
-    setInterval(updateClock,1000);
     setInterval(check,10000);
 }
 
