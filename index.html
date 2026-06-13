@@ -213,6 +213,33 @@ updateClock();
 updateDate();
 loadTimes();
 
+
+
+
+    let audioUnlocked = false;
+
+const adhan = document.getElementById("adhan");
+
+// لازم أول تفاعل من المستخدم
+document.addEventListener("click", () => {
+    adhan.play().then(() => {
+        adhan.pause();
+        adhan.currentTime = 0;
+        audioUnlocked = true;
+    }).catch(()=>{});
+});
+
+function playAdhan(){
+    if(!audioUnlocked) return;
+
+    adhan.currentTime = 0;
+    adhan.play().catch(()=>{});
+}
+
+
+
+    
+
 </script>
 
 </body>
