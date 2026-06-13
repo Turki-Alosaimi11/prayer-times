@@ -2,16 +2,30 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>نظام الأذان - مؤسسة رسملة</title>
+<title>نظام الأذان - رسملة</title>
 
 <style>
 body{
     margin:0;
     font-family: Arial;
-    background: linear-gradient(135deg,#0f172a,#0b5d3b);
     color:white;
+    background:url('bg.jpg') center/cover no-repeat;
+    position:relative;
 }
 
+/* خلفية ضبابية */
+body::before{
+    content:"";
+    position:fixed;
+    top:0;left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px);
+    z-index:-1;
+}
+
+/* الشعار */
 .logo{
     text-align:center;
     margin-top:20px;
@@ -19,21 +33,32 @@ body{
 
 .logo img{
     width:220px;
+    filter: drop-shadow(0 0 10px #0b5d3b);
 }
 
+/* العنوان */
 .title{
     text-align:center;
     font-size:26px;
     margin-top:10px;
 }
 
+/* الساعة */
+.clock{
+    text-align:center;
+    font-size:30px;
+    margin-top:10px;
+    font-weight:bold;
+}
+
+/* التاريخ */
 .date{
     text-align:center;
-    margin-top:10px;
     font-size:18px;
     opacity:0.9;
 }
 
+/* صندوق المواقيت */
 .box{
     display:flex;
     justify-content:center;
@@ -49,6 +74,7 @@ body{
     min-width:120px;
     text-align:center;
     transition:0.3s;
+    backdrop-filter: blur(8px);
 }
 
 .prayer.active{
@@ -56,22 +82,34 @@ body{
     transform:scale(1.1);
 }
 
-.prayer h3{
-    margin:0;
+/* صندوق العد التنازلي */
+.countdown{
+    text-align:center;
+    margin:20px auto;
+    padding:15px;
+    width:280px;
+    background:rgba(255,255,255,0.08);
+    border-radius:15px;
+    backdrop-filter: blur(10px);
 }
 
-.prayer span{
-    font-size:20px;
+.countdown h3{
+    margin:0;
+    font-size:18px;
+}
+
+.countdown span{
+    font-size:24px;
     font-weight:bold;
 }
 
+/* الشريط */
 .ticker{
     position:fixed;
     bottom:0;
     width:100%;
     background:#0b5d3b;
     padding:10px;
-    font-size:18px;
 }
 </style>
 </head>
@@ -83,7 +121,14 @@ body{
 </div>
 
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
+
+<div class="clock" id="clock">--:--:--</div>
 <div class="date" id="date"></div>
+
+<div class="countdown">
+    <h3>الوقت المتبقي للصلاة القادمة</h3>
+    <span id="nextPrayer">--</span>
+</div>
 
 <div class="box">
     <div class="prayer" id="fajr"><h3>الفجر</h3><span>--</span></div>
@@ -97,90 +142,97 @@ body{
 
 <div class="ticker">
 <marquee direction="right">
-سبحان الله وبحمده - سبحان الله العظيم | نسأل الله لكم التوفيق
+سبحان الله وبحمده | نسأل الله لكم التوفيق
 </marquee>
 </div>
 
 <script>
 
-const city = "Riyadh";
-const country = "SA";
+const city="Riyadh";
+const country="SA";
 
-let prayerTimes = {};
+let times={};
 
-async function getTimes(){
-    const res = await fetch(
-        `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=4`
-    );
-    const data = await res.json();
-    const t = data.data.timings;
-
-    prayerTimes = {
-        Fajr: t.Fajr,
-        Dhuhr: t.Dhuhr,
-        Asr: t.Asr,
-        Maghrib: t.Maghrib,
-        Isha: t.Isha
-    };
-
-    document.querySelector("#fajr span").innerText = t.Fajr;
-    document.querySelector("#dhuhr span").innerText = t.Dhuhr;
-    document.querySelector("#asr span").innerText = t.Asr;
-    document.querySelector("#maghrib span").innerText = t.Maghrib;
-    document.querySelector("#isha span").innerText = t.Isha;
+function format12(date){
+    let h=date.getHours();
+    let m=date.getMinutes();
+    let s=date.getSeconds();
+    let ampm=h>=12?"PM":"AM";
+    h=h%12; if(h===0)h=12;
+    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} ${ampm}`;
 }
 
-function getCurrentTime(){
-    const d = new Date();
+function updateClock(){
+    const now=new Date();
+    document.getElementById("clock").innerText=format12(now);
+}
+
+async function loadTimes(){
+    const res=await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=4`);
+    const data=await res.json();
+    const t=data.data.timings;
+
+    times={
+        Fajr:t.Fajr,
+        Dhuhr:t.Dhuhr,
+        Asr:t.Asr,
+        Maghrib:t.Maghrib,
+        Isha:t.Isha
+    };
+
+    for(let p in times){
+        document.getElementById(p.toLowerCase()).querySelector("span").innerText=times[p];
+    }
+}
+
+function getNow(){
+    const d=new Date();
     return d.toTimeString().slice(0,5);
 }
 
-function checkAzan(){
-    const now = getCurrentTime();
-
-    Object.keys(prayerTimes).forEach(p=>{
-        if(prayerTimes[p] === now){
-            playAzan(p);
-        }
-    });
-
-    highlightNext();
-}
-
-function playAzan(prayer){
-    const audio = document.getElementById("adhan");
+function playAdhan(){
+    const audio=document.getElementById("adhan");
     audio.play().catch(()=>{});
-    alert("حان الآن وقت صلاة " + prayer);
 }
 
-function highlightNext(){
-    const now = getCurrentTime();
+function check(){
+    const now=getNow();
 
-    Object.keys(prayerTimes).forEach(p=>{
-        document.getElementById(p.toLowerCase()).classList.remove("active");
-    });
+    for(let p in times){
+        if(times[p]===now){
+            playAdhan();
+        }
+    }
 
-    let next = null;
+    showNext();
+}
 
-    for(let p in prayerTimes){
-        if(prayerTimes[p] > now){
-            next = p;
+function showNext(){
+    const now=getNow();
+    let next=null;
+    let diffText="--";
+
+    for(let p in times){
+        if(times[p]>now){
+            next=p;
             break;
         }
     }
 
     if(next){
+        document.getElementById("nextPrayer").innerText=next;
         document.getElementById(next.toLowerCase()).classList.add("active");
     }
 }
 
 function start(){
-    const d = new Date();
-    document.getElementById("date").innerText =
-        d.toLocaleDateString("ar-SA");
+    const d=new Date();
+    document.getElementById("date").innerText=d.toLocaleDateString("ar-SA");
 
-    getTimes();
-    setInterval(checkAzan, 30000);
+    loadTimes();
+
+    setInterval(updateClock,1000);
+    setInterval(check,30000);
 }
 
 start();
