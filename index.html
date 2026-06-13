@@ -13,7 +13,6 @@ body{
     overflow:hidden;
 }
 
-/* خلفية ضبابية */
 body::before{
     content:"";
     position:fixed;
@@ -23,28 +22,41 @@ body::before{
     z-index:-1;
 }
 
-/* الشعار */
-.logo{
-    text-align:center;
-    padding-top:10px;
-}
-.logo img{
-    width:180px;
-}
-
 /* العنوان */
 .title{
     text-align:center;
     font-size:24px;
     font-weight:bold;
+    margin-top:10px;
+}
+
+.subtitle{
+    text-align:center;
+    font-size:16px;
+    opacity:0.8;
+}
+
+/* الساعة */
+.clock{
+    text-align:center;
+    font-size:40px;
+    margin-top:5px;
+    font-weight:bold;
+}
+
+/* التاريخ */
+.date{
+    text-align:center;
+    font-size:16px;
+    margin-top:5px;
 }
 
 /* المواقيت */
 .prayers{
     display:flex;
     justify-content:center;
-    gap:10px;
     flex-wrap:wrap;
+    gap:8px;
     margin-top:10px;
 }
 
@@ -52,7 +64,7 @@ body::before{
     background:rgba(255,255,255,0.08);
     padding:10px;
     border-radius:10px;
-    min-width:100px;
+    min-width:110px;
     text-align:center;
 }
 
@@ -60,16 +72,16 @@ body::before{
     background:#22c55e;
 }
 
-/* الصورة الكبيرة في الوسط */
+/* الصورة الكبيرة */
 .hero{
     display:flex;
     justify-content:center;
-    margin-top:15px;
+    margin-top:10px;
 }
 
 .hero img{
-    width:60%;
-    max-width:800px;
+    width:70%;
+    max-width:900px;
     border-radius:15px;
     box-shadow:0 10px 25px rgba(0,0,0,0.5);
 }
@@ -78,16 +90,15 @@ body::before{
 .countdown{
     text-align:center;
     margin-top:10px;
-    font-size:18px;
+    font-size:20px;
     background:rgba(255,255,255,0.08);
-    width:350px;
-    margin-left:auto;
-    margin-right:auto;
+    width:400px;
+    margin:auto;
     padding:12px;
     border-radius:10px;
 }
 
-/* الشريط السفلي */
+/* الشريط */
 .footer{
     position:fixed;
     bottom:0;
@@ -95,12 +106,12 @@ body::before{
     background:#0b5d3b;
     padding:10px;
     font-size:18px;
-    white-space:nowrap;
     overflow:hidden;
 }
 
 .scroll{
     display:inline-block;
+    white-space:nowrap;
     animation:move 25s linear infinite;
 }
 
@@ -113,13 +124,13 @@ body::before{
 
 <body>
 
-<div class="logo">
-    <img src="logo.png">
-</div>
-
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
+<div class="subtitle">Rasmalah Contracting & Marketing</div>
 
-<!-- مواقيت -->
+<div class="clock" id="clock">--</div>
+<div class="date" id="date">--</div>
+
+<!-- المواقيت -->
 <div class="prayers">
     <div class="prayer" id="fajr"><div>الفجر</div><span></span></div>
     <div class="prayer" id="dhuhr"><div>الظهر</div><span></span></div>
@@ -128,19 +139,17 @@ body::before{
     <div class="prayer" id="isha"><div>العشاء</div><span></span></div>
 </div>
 
-<!-- الصورة الكبيرة -->
+<!-- الصورة -->
 <div class="hero">
     <img src="m.png">
 </div>
 
 <!-- العد -->
-<div class="countdown" id="countdown">
-    الصلاة القادمة...
-</div>
+<div class="countdown" id="countdown">الصلاة القادمة...</div>
 
 <audio id="adhan" src="adhan.mp3"></audio>
 
-<!-- الشريط السفلي -->
+<!-- الشريط -->
 <div class="footer">
     <div class="scroll">
         سبحان الله • الحمد لله • لا إله إلا الله • الله أكبر • استغفر الله • اللهم صل وسلم على نبينا محمد
@@ -155,81 +164,48 @@ let unlocked = false;
 
 /* تشغيل الصوت */
 document.addEventListener("click", () => {
-    const audio = document.getElementById("adhan");
-
-    audio.play().then(()=>{
-        audio.pause();
-        audio.currentTime = 0;
+    const a = document.getElementById("adhan");
+    a.play().then(()=>{
+        a.pause();
+        a.currentTime = 0;
         unlocked = true;
     }).catch(()=>{});
 });
 
-/* تشغيل الأذان */
-function playAdhan(){
-    if(!unlocked) return;
-
-    const audio = document.getElementById("adhan");
-    audio.currentTime = 0;
-    audio.play().catch(()=>{});
-}
-
-/* الوقت بالدقائق */
-function nowMin(){
+/* الوقت 12H */
+function format12(){
     let d = new Date();
-    return d.getHours()*60 + d.getMinutes();
+    let h = d.getHours();
+    let m = d.getMinutes();
+    let s = d.getSeconds();
+    let ampm = h>=12?"PM":"AM";
+    h = h%12 || 12;
+    return `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* تحويل */
-function toMin(t){
-    let [h,m] = t.split(":").map(Number);
-    return h*60 + m;
+/* تحديث الساعة */
+function updateClock(){
+    document.getElementById("clock").innerText = format12();
 }
 
-/* العد التنازلي */
-function updateCountdown(){
-    let now = nowMin();
+/* التاريخ هجري + ميلادي + يوم */
+function updateDate(){
+    let d = new Date();
+    let greg = d.toLocaleDateString("en-GB");
+    let hijri = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', {
+        day:'numeric',
+        month:'long',
+        year:'numeric'
+    }).format(d);
 
-    let next = null;
-    let nextT = null;
+    let day = d.toLocaleDateString('ar', {weekday:'long'});
 
-    for(let p in times){
-        let t = toMin(times[p]);
-        if(t > now){
-            next = p;
-            nextT = t;
-            break;
-        }
-    }
-
-    if(next){
-        let diff = nextT - now;
-        let h = Math.floor(diff/60);
-        let m = diff%60;
-
-        document.getElementById("countdown").innerText =
-        `الصلاة القادمة: ${next} خلال ${h} ساعة و ${m} دقيقة`;
-    }
+    document.getElementById("date").innerText =
+    `${day} | ميلادي: ${greg} | هجري: ${hijri}`;
 }
 
-/* فحص الأذان */
-function check(){
-    let now = new Date();
-    let current =
-        now.getHours().toString().padStart(2,'0') + ":" +
-        now.getMinutes().toString().padStart(2,'0');
-
-    for(let p in times){
-        if(times[p] === current && lastPlayed !== p){
-            playAdhan();
-            lastPlayed = p;
-        }
-    }
-
-    updateCountdown();
-}
-
-/* تحميل المواقيت */
-async function loadTimes(){
+/* تحميل الصلاة */
+async function load(){
     const res = await fetch("https://api.aladhan.com/v1/timingsByCity?city=Riyadh&country=SA&method=4");
     const data = await res.json();
     const t = data.data.timings;
@@ -243,17 +219,79 @@ async function loadTimes(){
     };
 
     for(let p in times){
-        let el = document.getElementById(p.toLowerCase());
-        if(el){
-            el.querySelector("span").innerText = times[p];
+        document.getElementById(p.toLowerCase()).querySelector("span").innerText = to12(times[p]);
+    }
+}
+
+/* تحويل 12 ساعة */
+function to12(t){
+    let [h,m] = t.split(":").map(Number);
+    let ampm = h>=12?"PM":"AM";
+    h = h%12 || 12;
+    return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
+}
+
+/* العد التنازلي + ثواني */
+function countdown(){
+    let now = new Date();
+    let nowMin = now.getHours()*60 + now.getMinutes();
+    let nowSec = nowMin*60 + now.getSeconds();
+
+    let next = null;
+    let nextSec = null;
+
+    for(let p in times){
+        let [h,m] = times[p].split(":").map(Number);
+        let t = (h*60 + m)*60;
+
+        if(t > nowSec){
+            next = p;
+            nextSec = t;
+            break;
         }
     }
+
+    if(next){
+        let diff = nextSec - nowSec;
+
+        let h = Math.floor(diff/3600);
+        let m = Math.floor((diff%3600)/60);
+        let s = diff%60;
+
+        document.getElementById("countdown").innerText =
+        `الصلاة القادمة: ${next} خلال ${h} ساعة ${m} دقيقة ${s} ثانية`;
+    }
+}
+
+/* تشغيل الأذان */
+function check(){
+    let now = new Date();
+    let current =
+        now.getHours().toString().padStart(2,'0') + ":" +
+        now.getMinutes().toString().padStart(2,'0');
+
+    for(let p in times){
+        if(times[p] === current && lastPlayed !== p){
+            if(unlocked){
+                let audio = document.getElementById("adhan");
+                audio.currentTime = 0;
+                audio.play();
+            }
+            lastPlayed = p;
+        }
+    }
+
+    countdown();
 }
 
 /* تشغيل */
 function start(){
-    loadTimes();
-    setInterval(check,10000);
+    load();
+    updateClock();
+    updateDate();
+
+    setInterval(updateClock,1000);
+    setInterval(check,1000);
 }
 
 start();
