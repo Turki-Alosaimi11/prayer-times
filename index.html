@@ -2,116 +2,189 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>مؤسسة رسملة</title>
+<title>نظام الأذان - مؤسسة رسملة</title>
 
 <style>
 body{
     margin:0;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     background: linear-gradient(135deg,#0f172a,#0b5d3b);
     color:white;
 }
 
-/* الشعار */
-.logo-container{
+.logo{
     text-align:center;
-    padding-top:20px;
+    margin-top:20px;
 }
 
-.logo-container img{
-    width:250px;
-    max-width:80%;
+.logo img{
+    width:220px;
 }
 
-/* العنوان */
 .title{
     text-align:center;
-    font-size:28px;
+    font-size:26px;
     margin-top:10px;
-    font-weight:bold;
 }
 
-/* صندوق المواقيت */
-.prayer-box{
-    display:flex;
-    justify-content:center;
-    flex-wrap:wrap;
-    margin-top:30px;
-    gap:15px;
-}
-
-.prayer{
-    background:rgba(255,255,255,0.08);
-    padding:15px 25px;
-    border-radius:12px;
-    text-align:center;
-    min-width:120px;
-}
-
-.prayer h3{
-    margin:0;
-    font-size:18px;
-}
-
-.prayer span{
-    font-size:20px;
-    font-weight:bold;
-    display:block;
-    margin-top:5px;
-}
-
-/* شريط الأخبار */
-.ticker{
-    position:fixed;
-    bottom:0;
-    width:100%;
-    background:#0b5d3b;
-    color:#fff;
-    padding:10px;
-    font-size:20px;
-}
-
-/* التاريخ */
 .date{
     text-align:center;
     margin-top:10px;
     font-size:18px;
     opacity:0.9;
 }
+
+.box{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-top:25px;
+}
+
+.prayer{
+    background:rgba(255,255,255,0.08);
+    padding:15px;
+    border-radius:12px;
+    min-width:120px;
+    text-align:center;
+    transition:0.3s;
+}
+
+.prayer.active{
+    background:#22c55e;
+    transform:scale(1.1);
+}
+
+.prayer h3{
+    margin:0;
+}
+
+.prayer span{
+    font-size:20px;
+    font-weight:bold;
+}
+
+.ticker{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:#0b5d3b;
+    padding:10px;
+    font-size:18px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="logo-container">
-    <img src="logo.png" alt="شعار المؤسسة">
+<div class="logo">
+    <img src="logo.png">
 </div>
 
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
-
 <div class="date" id="date"></div>
 
-<div class="prayer-box">
-    <div class="prayer"><h3>الفجر</h3><span>05:00</span></div>
-    <div class="prayer"><h3>الظهر</h3><span>12:10</span></div>
-    <div class="prayer"><h3>العصر</h3><span>15:30</span></div>
-    <div class="prayer"><h3>المغرب</h3><span>18:05</span></div>
-    <div class="prayer"><h3>العشاء</h3><span>19:30</span></div>
+<div class="box">
+    <div class="prayer" id="fajr"><h3>الفجر</h3><span>--</span></div>
+    <div class="prayer" id="dhuhr"><h3>الظهر</h3><span>--</span></div>
+    <div class="prayer" id="asr"><h3>العصر</h3><span>--</span></div>
+    <div class="prayer" id="maghrib"><h3>المغرب</h3><span>--</span></div>
+    <div class="prayer" id="isha"><h3>العشاء</h3><span>--</span></div>
 </div>
+
+<audio id="adhan" src="adhan.mp3"></audio>
 
 <div class="ticker">
 <marquee direction="right">
-مرحباً بكم في مؤسسة رسملة للتسويق والمقاولات - نسأل الله لكم يوماً موفقاً ومليئاً بالإنجاز
+سبحان الله وبحمده - سبحان الله العظيم | نسأل الله لكم التوفيق
 </marquee>
 </div>
 
 <script>
-// عرض التاريخ
-const d = new Date();
-document.getElementById("date").innerHTML =
-"التاريخ: " + d.toLocaleDateString("ar-SA");
 
-// (اختياري) تطوير لاحق: مواقيت API + عداد الصلاة القادمة
+const city = "Riyadh";
+const country = "SA";
+
+let prayerTimes = {};
+
+async function getTimes(){
+    const res = await fetch(
+        `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=4`
+    );
+    const data = await res.json();
+    const t = data.data.timings;
+
+    prayerTimes = {
+        Fajr: t.Fajr,
+        Dhuhr: t.Dhuhr,
+        Asr: t.Asr,
+        Maghrib: t.Maghrib,
+        Isha: t.Isha
+    };
+
+    document.querySelector("#fajr span").innerText = t.Fajr;
+    document.querySelector("#dhuhr span").innerText = t.Dhuhr;
+    document.querySelector("#asr span").innerText = t.Asr;
+    document.querySelector("#maghrib span").innerText = t.Maghrib;
+    document.querySelector("#isha span").innerText = t.Isha;
+}
+
+function getCurrentTime(){
+    const d = new Date();
+    return d.toTimeString().slice(0,5);
+}
+
+function checkAzan(){
+    const now = getCurrentTime();
+
+    Object.keys(prayerTimes).forEach(p=>{
+        if(prayerTimes[p] === now){
+            playAzan(p);
+        }
+    });
+
+    highlightNext();
+}
+
+function playAzan(prayer){
+    const audio = document.getElementById("adhan");
+    audio.play().catch(()=>{});
+    alert("حان الآن وقت صلاة " + prayer);
+}
+
+function highlightNext(){
+    const now = getCurrentTime();
+
+    Object.keys(prayerTimes).forEach(p=>{
+        document.getElementById(p.toLowerCase()).classList.remove("active");
+    });
+
+    let next = null;
+
+    for(let p in prayerTimes){
+        if(prayerTimes[p] > now){
+            next = p;
+            break;
+        }
+    }
+
+    if(next){
+        document.getElementById(next.toLowerCase()).classList.add("active");
+    }
+}
+
+function start(){
+    const d = new Date();
+    document.getElementById("date").innerText =
+        d.toLocaleDateString("ar-SA");
+
+    getTimes();
+    setInterval(checkAzan, 30000);
+}
+
+start();
+
 </script>
 
 </body>
