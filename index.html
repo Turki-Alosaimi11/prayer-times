@@ -2,152 +2,166 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Rasmalah | رسملة</title>
+<title>Rasmalah Dashboard</title>
 
 <style>
 body{
     margin:0;
     font-family: Arial;
+    background: linear-gradient(135deg,#0b5d3b,#061f18);
     color:white;
-    background: linear-gradient(135deg,#0b5d3b,#06281f);
     overflow:hidden;
 }
 
-/* خلفية ضبابية */
+/* طبقة خفيفة */
 body::before{
     content:"";
     position:fixed;
     inset:0;
     background:rgba(0,0,0,0.35);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px);
     z-index:-1;
 }
 
-/* الشعار */
-.logo{
+/* الأعلى */
+.header{
     text-align:center;
-    margin-top:15px;
+    padding-top:10px;
 }
 
-.logo img{
-    width:200px;
-    filter: drop-shadow(0 0 12px #0b5d3b);
+.header img{
+    width:180px;
 }
 
 /* العنوان */
 .title{
     text-align:center;
-    font-size:26px;
-    margin-top:5px;
+    font-size:24px;
     font-weight:bold;
-}
-
-.subtitle{
-    text-align:center;
-    font-size:18px;
-    opacity:0.8;
+    margin-top:5px;
 }
 
 /* الساعة */
 .clock{
     text-align:center;
-    font-size:34px;
-    margin-top:10px;
-    font-weight:bold;
-}
-
-/* التاريخ */
-.date{
-    text-align:center;
-    font-size:18px;
+    font-size:32px;
     margin-top:5px;
-    opacity:0.9;
 }
 
 /* المواقيت */
-.box{
+.prayers{
     display:flex;
     justify-content:center;
-    flex-wrap:wrap;
     gap:10px;
-    margin-top:20px;
+    margin-top:10px;
+    flex-wrap:wrap;
 }
 
 .prayer{
     background:rgba(255,255,255,0.08);
-    padding:12px;
-    border-radius:12px;
+    padding:10px;
+    border-radius:10px;
     min-width:110px;
     text-align:center;
+    transition:0.3s;
 }
 
 .prayer.active{
     background:#22c55e;
+    transform:scale(1.1);
 }
 
-/* مستطيل العد التنازلي */
-#countdown{
+/* الصورة الوسط */
+.center-img{
+    display:flex;
+    justify-content:center;
+    margin-top:15px;
+}
+
+.center-img img{
+    width:55%;
+    max-width:650px;
+    border-radius:15px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* العد التنازلي */
+.countdown{
     text-align:center;
-    margin:20px auto;
-    padding:15px;
-    width:320px;
-    background:rgba(255,255,255,0.1);
-    border-radius:12px;
+    margin-top:10px;
     font-size:18px;
 }
 
-/* الأذكار */
-.ticker{
+/* الشريط السفلي */
+.footer{
     position:fixed;
     bottom:0;
     width:100%;
     background:#0b5d3b;
     padding:10px;
     font-size:18px;
+    white-space:nowrap;
+    overflow:hidden;
+}
+
+.scroll{
+    display:inline-block;
+    animation: move 20s linear infinite;
+}
+
+@keyframes move{
+    from{transform:translateX(100%);}
+    to{transform:translateX(-100%);}
 }
 </style>
 </head>
 
 <body>
 
-<div class="logo">
+<div class="header">
     <img src="logo.png">
 </div>
 
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
-<div class="subtitle">Rasmalah Company for Marketing & Contracting</div>
-
 <div class="clock" id="clock">--</div>
-<div class="date" id="date">--</div>
 
-<div id="countdown">الصلاة القادمة...</div>
-
-<div class="box">
-    <div class="prayer" id="fajr"><h3>الفجر</h3><span></span></div>
-    <div class="prayer" id="dhuhr"><h3>الظهر</h3><span></span></div>
-    <div class="prayer" id="asr"><h3>العصر</h3><span></span></div>
-    <div class="prayer" id="maghrib"><h3>المغرب</h3><span></span></div>
-    <div class="prayer" id="isha"><h3>العشاء</h3><span></span></div>
+<!-- مواقيت -->
+<div class="prayers">
+    <div class="prayer" id="fajr"><div>الفجر</div><span></span></div>
+    <div class="prayer" id="dhuhr"><div>الظهر</div><span></span></div>
+    <div class="prayer" id="asr"><div>العصر</div><span></span></div>
+    <div class="prayer" id="maghrib"><div>المغرب</div><span></span></div>
+    <div class="prayer" id="isha"><div>العشاء</div><span></span></div>
 </div>
 
-<audio id="adhan" src="adhan.mp3" preload="auto"></audio>
+<!-- الصورة في الوسط -->
+<div class="center-img">
+    <img src="m.png">
+</div>
 
-<div class="ticker">
-<marquee>
-سبحان الله | الحمد لله | لا إله إلا الله | الله أكبر | استغفر الله
-</marquee>
+<!-- العد -->
+<div class="countdown" id="countdown">
+    الصلاة القادمة...
+</div>
+
+<audio id="adhan" src="adhan.mp3"></audio>
+
+<!-- شريط سفلي -->
+<div class="footer">
+    <div class="scroll">
+        سبحان الله • الحمد لله • لا إله إلا الله • الله أكبر • استغفر الله • اللهم صل وسلم على نبينا محمد
+    </div>
 </div>
 
 <script>
 
 let times = {};
-let lastPlayed = "";
+let lastPlayed = {};
 let unlocked = false;
 
-/* فتح الصوت */
+/* تشغيل الصوت */
 document.addEventListener("click", () => {
     const audio = document.getElementById("adhan");
-
     audio.play().then(()=>{
         audio.pause();
         audio.currentTime = 0;
@@ -156,7 +170,7 @@ document.addEventListener("click", () => {
 });
 
 /* تشغيل الأذان */
-function playAdhan(){
+function playAdhan(prayer){
     if(!unlocked) return;
 
     const audio = document.getElementById("adhan");
@@ -164,13 +178,13 @@ function playAdhan(){
     audio.play().catch(()=>{});
 }
 
-/* الوقت الحالي */
-function getNow(){
+/* الوقت بالدقائق */
+function nowMin(){
     let d = new Date();
     return d.getHours()*60 + d.getMinutes();
 }
 
-/* تحويل الوقت */
+/* تحويل */
 function toMin(t){
     let [h,m] = t.split(":").map(Number);
     return h*60 + m;
@@ -178,22 +192,22 @@ function toMin(t){
 
 /* العد التنازلي */
 function updateCountdown(){
-    let now = getNow();
+    let now = nowMin();
 
     let next = null;
-    let nextTime = null;
+    let nextT = null;
 
     for(let p in times){
         let t = toMin(times[p]);
         if(t > now){
             next = p;
-            nextTime = t;
+            nextT = t;
             break;
         }
     }
 
     if(next){
-        let diff = nextTime - now;
+        let diff = nextT - now;
         let h = Math.floor(diff/60);
         let m = diff%60;
 
@@ -210,9 +224,9 @@ function check(){
         now.getMinutes().toString().padStart(2,'0');
 
     for(let p in times){
-        if(times[p] === current && lastPlayed !== p){
-            playAdhan();
-            lastPlayed = p;
+        if(times[p] === current && !lastPlayed[p]){
+            playAdhan(p);
+            lastPlayed[p] = true;
         }
     }
 
@@ -241,7 +255,7 @@ async function loadTimes(){
     }
 }
 
-/* ساعة */
+/* الساعة */
 function updateClock(){
     let d = new Date();
     let h = d.getHours();
@@ -254,18 +268,10 @@ function updateClock(){
     `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* تاريخ */
-function updateDate(){
-    let d = new Date();
-    document.getElementById("date").innerText =
-    d.toLocaleDateString("ar-SA");
-}
-
 /* تشغيل */
 function start(){
     loadTimes();
     updateClock();
-    updateDate();
 
     setInterval(updateClock,1000);
     setInterval(check,10000);
