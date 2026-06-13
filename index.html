@@ -13,6 +13,7 @@ body{
     overflow:hidden;
 }
 
+/* الخلفية الضبابية */
 body::before{
     content:"";
     position:fixed;
@@ -22,26 +23,27 @@ body::before{
     z-index:-1;
 }
 
+/* الشعار */
+.logo{
+    text-align:center;
+    margin-top:10px;
+}
+.logo img{
+    width:180px;
+}
+
 /* العنوان */
 .title{
     text-align:center;
     font-size:24px;
     font-weight:bold;
-    margin-top:10px;
-}
-
-.subtitle{
-    text-align:center;
-    font-size:16px;
-    opacity:0.8;
 }
 
 /* الساعة */
 .clock{
     text-align:center;
-    font-size:40px;
+    font-size:38px;
     margin-top:5px;
-    font-weight:bold;
 }
 
 /* التاريخ */
@@ -64,7 +66,7 @@ body::before{
     background:rgba(255,255,255,0.08);
     padding:10px;
     border-radius:10px;
-    min-width:110px;
+    min-width:100px;
     text-align:center;
 }
 
@@ -72,7 +74,7 @@ body::before{
     background:#22c55e;
 }
 
-/* الصورة الكبيرة */
+/* الصورة الكبيرة (بدون قص) */
 .hero{
     display:flex;
     justify-content:center;
@@ -80,8 +82,10 @@ body::before{
 }
 
 .hero img{
-    width:70%;
-    max-width:900px;
+    width:85%;
+    max-width:1200px;
+    height:auto;
+    object-fit:contain;
     border-radius:15px;
     box-shadow:0 10px 25px rgba(0,0,0,0.5);
 }
@@ -90,15 +94,16 @@ body::before{
 .countdown{
     text-align:center;
     margin-top:10px;
-    font-size:20px;
+    font-size:18px;
     background:rgba(255,255,255,0.08);
-    width:400px;
-    margin:auto;
+    width:420px;
+    margin-left:auto;
+    margin-right:auto;
     padding:12px;
     border-radius:10px;
 }
 
-/* الشريط */
+/* الشريط السفلي */
 .footer{
     position:fixed;
     bottom:0;
@@ -107,11 +112,11 @@ body::before{
     padding:10px;
     font-size:18px;
     overflow:hidden;
+    white-space:nowrap;
 }
 
 .scroll{
     display:inline-block;
-    white-space:nowrap;
     animation:move 25s linear infinite;
 }
 
@@ -124,8 +129,12 @@ body::before{
 
 <body>
 
+<!-- الشعار -->
+<div class="logo">
+    <img src="logo.png">
+</div>
+
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
-<div class="subtitle">Rasmalah Contracting & Marketing</div>
 
 <div class="clock" id="clock">--</div>
 <div class="date" id="date">--</div>
@@ -144,12 +153,15 @@ body::before{
     <img src="m.png">
 </div>
 
-<!-- العد -->
-<div class="countdown" id="countdown">الصلاة القادمة...</div>
+<!-- العد التنازلي -->
+<div class="countdown" id="countdown">
+    الصلاة القادمة...
+</div>
 
+<!-- الصوت -->
 <audio id="adhan" src="adhan.mp3"></audio>
 
-<!-- الشريط -->
+<!-- الشريط السفلي -->
 <div class="footer">
     <div class="scroll">
         سبحان الله • الحمد لله • لا إله إلا الله • الله أكبر • استغفر الله • اللهم صل وسلم على نبينا محمد
@@ -162,50 +174,85 @@ let times = {};
 let lastPlayed = "";
 let unlocked = false;
 
-/* تشغيل الصوت */
+/* فتح الصوت */
 document.addEventListener("click", () => {
-    const a = document.getElementById("adhan");
-    a.play().then(()=>{
-        a.pause();
-        a.currentTime = 0;
+    const audio = document.getElementById("adhan");
+
+    audio.play().then(()=>{
+        audio.pause();
+        audio.currentTime = 0;
         unlocked = true;
     }).catch(()=>{});
 });
 
-/* الوقت 12H */
-function format12(){
+/* تشغيل الأذان */
+function playAdhan(){
+    if(!unlocked) return;
+
+    const audio = document.getElementById("adhan");
+    audio.currentTime = 0;
+    audio.play().catch(()=>{});
+}
+
+/* الوقت الحالي بالثواني */
+function nowSeconds(){
     let d = new Date();
-    let h = d.getHours();
-    let m = d.getMinutes();
-    let s = d.getSeconds();
-    let ampm = h>=12?"PM":"AM";
-    h = h%12 || 12;
-    return `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} ${ampm}`;
+    return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
 }
 
-/* تحديث الساعة */
-function updateClock(){
-    document.getElementById("clock").innerText = format12();
+/* تحويل */
+function toSeconds(t){
+    let [h,m] = t.split(":").map(Number);
+    return h*3600 + m*60;
 }
 
-/* التاريخ هجري + ميلادي + يوم */
-function updateDate(){
-    let d = new Date();
-    let greg = d.toLocaleDateString("en-GB");
-    let hijri = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', {
-        day:'numeric',
-        month:'long',
-        year:'numeric'
-    }).format(d);
+/* العد التنازلي */
+function countdown(){
+    let now = nowSeconds();
 
-    let day = d.toLocaleDateString('ar', {weekday:'long'});
+    let next = null;
+    let nextT = null;
 
-    document.getElementById("date").innerText =
-    `${day} | ميلادي: ${greg} | هجري: ${hijri}`;
+    for(let p in times){
+        let t = toSeconds(times[p]);
+        if(t > now){
+            next = p;
+            nextT = t;
+            break;
+        }
+    }
+
+    if(next){
+        let diff = nextT - now;
+
+        let h = Math.floor(diff/3600);
+        let m = Math.floor((diff%3600)/60);
+        let s = diff%60;
+
+        document.getElementById("countdown").innerText =
+        `الصلاة القادمة: ${next} خلال ${h} ساعة ${m} دقيقة ${s} ثانية`;
+    }
 }
 
-/* تحميل الصلاة */
-async function load(){
+/* فحص الأذان */
+function check(){
+    let now = new Date();
+    let current =
+        now.getHours().toString().padStart(2,'0') + ":" +
+        now.getMinutes().toString().padStart(2,'0');
+
+    for(let p in times){
+        if(times[p] === current && lastPlayed !== p){
+            playAdhan();
+            lastPlayed = p;
+        }
+    }
+
+    countdown();
+}
+
+/* تحميل المواقيت */
+async function loadTimes(){
     const res = await fetch("https://api.aladhan.com/v1/timingsByCity?city=Riyadh&country=SA&method=4");
     const data = await res.json();
     const t = data.data.timings;
@@ -219,11 +266,14 @@ async function load(){
     };
 
     for(let p in times){
-        document.getElementById(p.toLowerCase()).querySelector("span").innerText = to12(times[p]);
+        let el = document.getElementById(p.toLowerCase());
+        if(el){
+            el.querySelector("span").innerText = to12(times[p]);
+        }
     }
 }
 
-/* تحويل 12 ساعة */
+/* 12 ساعة */
 function to12(t){
     let [h,m] = t.split(":").map(Number);
     let ampm = h>=12?"PM":"AM";
@@ -231,62 +281,40 @@ function to12(t){
     return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* العد التنازلي + ثواني */
-function countdown(){
-    let now = new Date();
-    let nowMin = now.getHours()*60 + now.getMinutes();
-    let nowSec = nowMin*60 + now.getSeconds();
+/* الساعة */
+function updateClock(){
+    let d = new Date();
+    let h = d.getHours();
+    let m = d.getMinutes();
+    let ampm = h>=12?"PM":"AM";
 
-    let next = null;
-    let nextSec = null;
+    h = h%12 || 12;
 
-    for(let p in times){
-        let [h,m] = times[p].split(":").map(Number);
-        let t = (h*60 + m)*60;
-
-        if(t > nowSec){
-            next = p;
-            nextSec = t;
-            break;
-        }
-    }
-
-    if(next){
-        let diff = nextSec - nowSec;
-
-        let h = Math.floor(diff/3600);
-        let m = Math.floor((diff%3600)/60);
-        let s = diff%60;
-
-        document.getElementById("countdown").innerText =
-        `الصلاة القادمة: ${next} خلال ${h} ساعة ${m} دقيقة ${s} ثانية`;
-    }
+    document.getElementById("clock").innerText =
+    `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* تشغيل الأذان */
-function check(){
-    let now = new Date();
-    let current =
-        now.getHours().toString().padStart(2,'0') + ":" +
-        now.getMinutes().toString().padStart(2,'0');
+/* التاريخ */
+function updateDate(){
+    let d = new Date();
 
-    for(let p in times){
-        if(times[p] === current && lastPlayed !== p){
-            if(unlocked){
-                let audio = document.getElementById("adhan");
-                audio.currentTime = 0;
-                audio.play();
-            }
-            lastPlayed = p;
-        }
-    }
+    let greg = d.toLocaleDateString("en-GB");
 
-    countdown();
+    let hijri = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', {
+        day:'numeric',
+        month:'long',
+        year:'numeric'
+    }).format(d);
+
+    let day = d.toLocaleDateString('ar', {weekday:'long'});
+
+    document.getElementById("date").innerText =
+    `${day} | ميلادي: ${greg} | هجري: ${hijri}`;
 }
 
 /* تشغيل */
 function start(){
-    load();
+    loadTimes();
     updateClock();
     updateDate();
 
