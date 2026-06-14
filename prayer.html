@@ -13,7 +13,6 @@ body{
     overflow:hidden;
 }
 
-/* الخلفية */
 body::before{
     content:"";
     position:fixed;
@@ -23,23 +22,18 @@ body::before{
     z-index:-1;
 }
 
-/* الشعار (كبرته) */
 .logo{
     text-align:center;
     margin-top:10px;
 }
-.logo img{
-    width:220px;   /* كان 140 */
-}
+.logo img{ width:220px; }
 
-/* العنوان */
 .title{
     text-align:center;
     font-size:22px;
     font-weight:bold;
 }
 
-/* الوقت */
 .clock{
     text-align:center;
     font-size:48px;
@@ -47,15 +41,13 @@ body::before{
     margin-top:5px;
 }
 
-/* التاريخ + اليوم (كبرتهم) */
 .date{
     text-align:center;
-    font-size:22px;   /* كان 16 */
+    font-size:22px;
     font-weight:bold;
     opacity:0.95;
 }
 
-/* المواقيت */
 .prayers{
     display:flex;
     justify-content:center;
@@ -79,7 +71,6 @@ body::before{
     font-size:16px;
 }
 
-/* العد */
 .countdown{
     width:420px;
     margin:25px auto;
@@ -90,10 +81,7 @@ body::before{
     border-radius:15px;
 }
 
-.countdown h2{
-    margin:0;
-    font-size:22px;
-}
+.countdown h2{ margin:0; font-size:22px; }
 
 .countdown .time{
     font-size:28px;
@@ -101,7 +89,6 @@ body::before{
     font-weight:bold;
 }
 
-/* 🔥 شريط الأذكار */
 .ticker{
     position:fixed;
     bottom:0;
@@ -112,7 +99,6 @@ body::before{
     border-top:1px solid rgba(255,255,255,0.3);
 }
 
-/* الحركة من اليمين لليسار */
 .ticker span{
     display:inline-block;
     white-space:nowrap;
@@ -130,20 +116,15 @@ body::before{
 
 <body>
 
-<!-- الشعار (مكبر) -->
 <div class="logo">
     <img src="logo.png">
 </div>
 
 <div class="title">مؤسسة رسملة للتسويق والمقاولات</div>
 
-<!-- الوقت -->
 <div class="clock" id="clock">--</div>
-
-<!-- التاريخ -->
 <div class="date" id="date">--</div>
 
-<!-- المواقيت -->
 <div class="prayers">
     <div class="prayer">الفجر <span id="fajr"></span></div>
     <div class="prayer">الظهر <span id="dhuhr"></span></div>
@@ -152,48 +133,25 @@ body::before{
     <div class="prayer">العشاء <span id="isha"></span></div>
 </div>
 
-<!-- العد -->
 <div class="countdown">
     <h2 id="nextPrayer">الصلاة القادمة</h2>
     <div class="time" id="countdown">--:--:--</div>
 </div>
 
-<!-- 🔥 شريط الأذكار -->
 <div class="ticker">
     <span>
-        سبحان الله • الحمد لله • لا إله إلا الله • الله أكبر • أستغفر الله • سبحان الله العظيم • الحمد لله رب العالمين • لا حول ولا قوة إلا بالله • اللهم صل وسلم على نبينا محمد • أستغفر الله العظيم وأتوب إليه •
+        سبحان الله • الحمد لله • لا إله إلا الله • الله أكبر • أستغفر الله • سبحان الله العظيم • الحمد لله رب العالمين • لا حول ولا قوة إلا الله • اللهم صل وسلم على نبينا محمد • أستغفر الله العظيم وأتوب إليه •
     </span>
 </div>
+
+<audio id="adhan" src="adhan.mp3"></audio>
 
 <script>
 
 let times = {};
-
-/* الوقت */
-function updateClock(){
-    let d = new Date();
-
-    let h = d.getHours();
-    let m = d.getMinutes();
-    let s = d.getSeconds();
-    let ampm = h>=12?"PM":"AM";
-
-    h = h%12 || 12;
-
-    document.getElementById("clock").innerText =
-    `${h}:${m}:${s} ${ampm}`;
-}
-
-/* التاريخ + اليوم */
-function updateDate(){
-    let d = new Date();
-
-    let day = d.toLocaleDateString('ar', {weekday:'long'});
-    let greg = d.toLocaleDateString("en-GB");
-
-    document.getElementById("date").innerText =
-    `${day} | ميلادي: ${greg}`;
-}
+let lastPlayed = "";
+let prayerMode = false;
+let prayerModeEnd = 0;
 
 /* تحميل المواقيت */
 async function loadTimes(){
@@ -216,7 +174,33 @@ async function loadTimes(){
     document.getElementById("isha").innerText = to12(t.Isha);
 }
 
-/* تحويل 12 ساعة */
+/* الوقت */
+function updateClock(){
+    let d = new Date();
+
+    let h = d.getHours();
+    let m = d.getMinutes();
+    let s = d.getSeconds();
+    let ampm = h>=12?"PM":"AM";
+
+    h = h%12 || 12;
+
+    document.getElementById("clock").innerText =
+    `${h}:${m}:${s} ${ampm}`;
+}
+
+/* التاريخ */
+function updateDate(){
+    let d = new Date();
+
+    let day = d.toLocaleDateString('ar', {weekday:'long'});
+    let greg = d.toLocaleDateString("en-GB");
+
+    document.getElementById("date").innerText =
+    `${day} | ميلادي: ${greg}`;
+}
+
+/* تحويل */
 function to12(t){
     let [h,m] = t.split(":").map(Number);
     let ampm = h>=12?"PM":"AM";
@@ -224,23 +208,22 @@ function to12(t){
     return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* العد */
+/* العد + الأذان */
 function updateCountdown(){
 
     let now = new Date();
     let secNow = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
 
+    let nextSec = Infinity;
     let nextName = "";
-    let nextSec = 0;
 
     for(let p in times){
         let [h,m] = times[p].split(":").map(Number);
         let sec = h*3600 + m*60;
 
-        if(sec > secNow){
-            nextName = p;
+        if(sec > secNow && sec < nextSec){
             nextSec = sec;
-            break;
+            nextName = p;
         }
     }
 
@@ -265,23 +248,49 @@ function updateCountdown(){
 
         document.getElementById("countdown").innerText =
         `${h} ساعة : ${m} دقيقة : ${s} ثانية`;
+
+        /* قبل الصلاة بـ 5 دقائق */
+        if(diff <= 300 && diff > 0){
+            prayerMode = true;
+            prayerModeEnd = Date.now() + (30 * 60 * 1000);
+        }
+
+        /* الأذان */
+        if(diff <= 1 && diff >= 0 && lastPlayed !== nextName){
+            document.getElementById("adhan").play();
+            lastPlayed = nextName;
+        }
     }
 }
 
+/* 🔴 الحل الصحيح للانتقال */
+function smartRedirect(){
 
-function startAdhanLoop(){
-    let audio = new Audio("adhan.mp3");
-    audio.loop = true;
-    audio.play().catch(()=>{});
+    let now = new Date();
+    let secNow = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
 
-    setInterval(() => {
-        if(audio.paused){
-            audio.play().catch(()=>{});
+    let nextSec = Infinity;
+
+    for(let p in times){
+        let [h,m] = times[p].split(":").map(Number);
+        let sec = h*3600 + m*60;
+
+        if(sec > secNow && sec < nextSec){
+            nextSec = sec;
         }
-    }, 5000);
+    }
+
+    if(nextSec === Infinity) return;
+
+    let diff = nextSec - secNow;
+
+    if(diff > 600){
+        window.location.href = "index.html";
+    }
 }
 
-window.addEventListener("load", startAdhanLoop);
+setInterval(smartRedirect, 60000);
+
 /* تشغيل */
 function start(){
     loadTimes();
