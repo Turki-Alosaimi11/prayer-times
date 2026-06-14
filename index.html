@@ -1,0 +1,14 @@
+<script>
+let pages = ["video.html","image.html","prayer.html"];
+let i = 0;
+
+function nextPage(){
+    i = (i+1) % pages.length;
+    window.location.href = pages[i];
+}
+
+/* 1:05 فيديو + 10 ث صورة + 10 ث مواقيت */
+setTimeout(()=>window.location.href="video.html",0);
+
+
+</script>

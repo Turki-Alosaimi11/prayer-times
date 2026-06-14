@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0;background:black;overflow:hidden">
+
+<video id="v" src="a.mp4" autoplay muted style="width:100%;height:100%;object-fit:cover"></video>
+
+<script>
+document.getElementById("v").onended = ()=>{
+    window.location.href="image.html";
+};
+</script>
+
+</body>
+</html>

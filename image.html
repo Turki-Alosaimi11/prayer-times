@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+}
+
+/* الخلفية الضبابية */
+.bg-blur{
+    position:fixed;
+    inset:0;
+    background:url('m.png') center/cover no-repeat;
+    filter:blur(20px);
+    transform:scale(1.1);
+    z-index:0;
+}
+
+/* الصورة الأساسية */
+.bg-main{
+    position:fixed;
+    inset:0;
+    background:url('m.png') center/contain no-repeat;
+    z-index:1;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="bg-blur"></div>
+<div class="bg-main"></div>
+
+
+
+<script>
+setTimeout(()=>{
+    window.location.href="prayer.html";
+},10000);
+</script>
+
+
+</body>
+</html>
