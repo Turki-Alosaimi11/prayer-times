@@ -150,8 +150,10 @@ body::before{
 
 let times = {};
 let lastPlayed = "";
-let prayerMode = false;
-let prayerModeEnd = 0;
+
+/* حالات النظام */
+let adhanActive = false;
+let adhanStart = 0;
 
 /* تحميل المواقيت */
 async function loadTimes(){
@@ -208,88 +210,87 @@ function to12(t){
     return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
-/* العد + الأذان */
+/* الوقت بالثواني */
+function nowSec(){
+    let d = new Date();
+    return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+}
+
+/* تحويل وقت صلاة */
+function toSec(t){
+    let [h,m] = t.split(":").map(Number);
+    return h*3600 + m*60;
+}
+
+/* تشغيل الأذان */
+function playAdhan(){
+    let a = document.getElementById("adhan");
+    a.currentTime = 0;
+    a.play();
+
+    adhanActive = true;
+    adhanStart = Date.now();
+}
+
+/* النظام */
 function updateCountdown(){
 
-    let now = new Date();
-    let secNow = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+    let now = nowSec();
 
     let nextSec = Infinity;
     let nextName = "";
 
     for(let p in times){
-        let [h,m] = times[p].split(":").map(Number);
-        let sec = h*3600 + m*60;
+        let sec = toSec(times[p]);
 
-        if(sec > secNow && sec < nextSec){
+        if(sec > now && sec < nextSec){
             nextSec = sec;
             nextName = p;
         }
     }
 
-    if(nextName){
+    if(!nextName) return;
 
-        let diff = nextSec - secNow;
+    let diff = nextSec - now;
 
-        let h = Math.floor(diff/3600);
-        let m = Math.floor((diff%3600)/60);
-        let s = diff%60;
+    let arabic = {
+        fajr:"الفجر",
+        dhuhr:"الظهر",
+        asr:"العصر",
+        maghrib:"المغرب",
+        isha:"العشاء"
+    };
 
-        let arabicName = {
-            fajr:"الفجر",
-            dhuhr:"الظهر",
-            asr:"العصر",
-            maghrib:"المغرب",
-            isha:"العشاء"
-        };
+    document.getElementById("nextPrayer").innerText =
+    "الصلاة القادمة: " + arabic[nextName];
 
-        document.getElementById("nextPrayer").innerText =
-        "الصلاة القادمة: " + arabicName[nextName];
+    document.getElementById("countdown").innerText =
+    `${Math.floor(diff/3600)} ساعة : ${Math.floor((diff%3600)/60)} دقيقة : ${diff%60} ثانية`;
 
-        document.getElementById("countdown").innerText =
-        `${h} ساعة : ${m} دقيقة : ${s} ثانية`;
-
-        /* قبل الصلاة بـ 5 دقائق */
-        if(diff <= 300 && diff > 0){
-            prayerMode = true;
-            prayerModeEnd = Date.now() + (30 * 60 * 1000);
-        }
-
-        /* الأذان */
-        if(diff <= 1 && diff >= 0 && lastPlayed !== nextName){
-            document.getElementById("adhan").play();
-            lastPlayed = nextName;
-        }
+    /* 🔴 وقت الأذان */
+    if(diff <= 1 && lastPlayed !== nextName){
+        playAdhan();
+        lastPlayed = nextName;
     }
+
+    /* 🔴 بعد الأذان */
+    if(adhanActive){
+        let passed = (Date.now() - adhanStart)/60000; // بالدقائق
+
+        if(passed >= 20){
+            window.location.href = "index.html";
+        }
+        return;
+    }
+
+    /* 🔵 قبل الصلاة */
+    if(diff > 300){
+        setTimeout(()=>{
+            window.location.href = "index.html";
+        }, 60000);
+    }
+
 }
-
-/* 🔴 الحل الصحيح للانتقال */
-function smartRedirect(){
-
-    let now = new Date();
-    let secNow = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
-
-    let nextSec = Infinity;
-
-    for(let p in times){
-        let [h,m] = times[p].split(":").map(Number);
-        let sec = h*3600 + m*60;
-
-        if(sec > secNow && sec < nextSec){
-            nextSec = sec;
-        }
-    }
-
-    if(nextSec === Infinity) return;
-
-    let diff = nextSec - secNow;
-
-    if(diff > 600){
-        window.location.href = "index.html";
-    }
-}
-
-setInterval(smartRedirect, 60000);
 
 /* تشغيل */
 function start(){
